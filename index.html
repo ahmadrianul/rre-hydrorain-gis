@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RRE HydroRain GIS - Rianul Risk Engineering & Satellite Rainfall Telemetry</title>
+  <meta name="description" content="Platform Rianul Risk Engineering untuk Analisis Presipitasi Curah Hujan Satelit Global Berbasis Grid Koordinat Presisi & Elevasi Tanah.">
+  
+  <!-- Premium Rain Cloud & Glowing Raindrops SVG Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='rainGrad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%236366f1'/><stop offset='100%25' stop-color='%2300f2fe'/></linearGradient></defs><path fill='url(%23rainGrad)' d='M30 48 A18 18 0 0 1 64 36 A22 22 0 0 1 88 56 A14 14 0 0 1 76 72 L28 72 A18 18 0 0 1 30 48 Z'/><path fill='%2300f2fe' d='M32 78 L26 92 C26 94 29 96 31 94 L35 80 Z'/><path fill='%23818cf8' d='M50 78 L44 92 C44 94 47 96 49 94 L53 80 Z'/><path fill='%2338bdf8' d='M68 78 L62 92 C62 94 65 96 67 94 L71 80 Z'/></svg>">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    
+    <!-- Top Navigation Header -->
+    <header class="navbar">
+      <div class="nav-left">
+        <div class="brand-logo">
+          <!-- HydroRain Cloud & Rain Emblem -->
+          <div class="logo-emblem">
+            <i class="fa-solid fa-cloud-showers-heavy emblem-cloud"></i>
+          </div>
+          <div class="brand-titles">
+            <h1>RRE HydroRain GIS</h1>
+            <span class="sub-brand">Rianul Risk Engineering & Satellite Rainfall Telemetry</span>
+          </div>
+        </div>
+        
+        <div class="breadcrumb-container">
+          <i class="fa-solid fa-location-dot text-cyan"></i>
+          <span class="location-path-text" id="display-location-path">Silakan cari lokasi atau masukkan koordinat...</span>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <!-- Top Search Input supporting Address & Lat/Lon Coordinates -->
+        <div class="top-search-box">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="location-input" placeholder="Ketik Nama Alamat / Koordinat (-2.879304, 120.190825)..." autocomplete="off" value="">
+          <button type="button" id="btn-search-trigger" class="btn-top-search" title="Cari Lokasi / Koordinat"><i class="fa-solid fa-arrow-right"></i></button>
+          <div id="autocomplete-dropdown" class="autocomplete-dropdown hidden"></div>
+        </div>
+
+        <div class="nav-actions">
+          <button id="btn-export-report" class="btn-icon-action" title="Cetak Laporan Risk Engineering">
+            <i class="fa-solid fa-file-arrow-down"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <main class="workspace-grid">
+      
+      <!-- Unified Compact Header Bar: Total Curah Hujan KPI + Elevasi + Provider Satelit Selector -->
+      <section class="top-metric-satellite-bar">
+        
+        <!-- Left: Compact KPI Metric Block -->
+        <div class="compact-kpi-block">
+          <div class="compact-kpi-icon">
+            <i class="fa-solid fa-cloud-showers-water"></i>
+          </div>
+          <div class="compact-kpi-details">
+            <span class="compact-kpi-label">TOTAL CURAH HUJAN (SATELLITE TELEMETRY)</span>
+            <div class="compact-kpi-val-row">
+              <h2 class="compact-kpi-value" id="kpi-rain">---.--- mm</h2>
+              <span class="compact-kpi-sub" id="kpi-rain-sub">Satelit ECMWF ERA5 (Eropa)</span>
+              <span class="compact-elev-pill" id="kpi-elevation" title="Tinggi Permukaan Tanah dari Permukaan Laut"><i class="fa-solid fa-mountain"></i> Elevasi: --- m dpl</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Satellite Provider Tabs -->
+        <div class="compact-sat-block">
+          <span class="compact-sat-label">PILIH PROVIDER SATELIT:</span>
+          <div class="sat-tabs" id="satellite-tabs">
+            <button type="button" class="btn-sat-tab active" data-sat="era5">
+              <span class="sat-name">ECMWF ERA5</span>
+              <span class="sat-desc">(Copernicus Eropa)</span>
+            </button>
+            <button type="button" class="btn-sat-tab" data-sat="gsmap">
+              <span class="sat-name">JAXA GSMaP</span>
+              <span class="sat-desc">(Satelit Jepang)</span>
+            </button>
+            <button type="button" class="btn-sat-tab" data-sat="chirps">
+              <span class="sat-name">USGS CHIRPS</span>
+              <span class="sat-desc">(Climate Hazards AS)</span>
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Section: Grafik Presipitasi Curah Hujan (Tepat di Atas Peta) -->
+      <section class="chart-section-top">
+        <div class="panel-card rainfall-chart-panel">
+          <div class="panel-header">
+            <div class="chart-header-left">
+              <h3 id="chart-title-text">Grafik Presipitasi Curah Hujan</h3>
+            </div>
+
+            <div class="chart-summary-text">
+              Total Presipitasi Hujan: <strong id="chart-val-total" class="indigo-text">---.--- mm</strong>
+            </div>
+          </div>
+
+          <div class="chart-body-wrapper">
+            <canvas id="hydrographChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Peta Spasial Presipitasi Curah Hujan Satelit -->
+      <section class="map-section-full">
+        <div class="map-card-wrapper">
+          
+          <!-- Structured Map Status Bar with Controls -->
+          <div class="map-status-bar">
+            
+            <!-- Top Header Row inside Map Bar -->
+            <div class="map-bar-top-row">
+              <span class="map-title-label">Peta Spasial Presipitasi Curah Hujan Satelit</span>
+              <span id="map-coordinates" class="coord-badge">Lat: -- | Lon: -- | Elevasi: -- m dpl</span>
+            </div>
+
+            <!-- Bottom Control Toolbar Row inside Map Bar -->
+            <div class="map-bar-controls-row">
+              
+              <!-- Clean Basemap Selector Control without Watermark -->
+              <div class="control-group-item">
+                <label for="basemap-select">Tampilan Peta:</label>
+                <select id="basemap-select" class="basemap-dropdown">
+                  <option value="google-hybrid">Google Maps Satelit (Hybrid)</option>
+                  <option value="google-streets">Google Maps Jalanan (Standard)</option>
+                  <option value="osm-light">Peta Terang / Putih (OpenStreetMap)</option>
+                  <option value="esri-dark" selected>Peta Gelap / Dark Mode (Clean Dark)</option>
+                  <option value="esri-topo">Peta Topografi & Kontur Elevasi</option>
+                </select>
+              </div>
+
+              <!-- Date & Time Selector Control -->
+              <div class="control-group-item">
+                <label>Rentang Waktu (Tanggal & Jam):</label>
+                <div class="datetime-range-inputs">
+                  <input type="datetime-local" id="start-datetime" value="2025-11-27T00:00">
+                  <span>s/d</span>
+                  <input type="datetime-local" id="end-datetime" value="2025-11-27T23:59">
+                </div>
+              </div>
+
+              <!-- Pin Toggle Layer in Toolbar -->
+              <div class="control-group-item">
+                <label class="layer-inline-label">
+                  <input type="checkbox" id="layer-location-pin" checked>
+                  <span class="pin-toggle-text"><i class="fa-solid fa-location-dot" style="color:#ef4444;"></i> Pin Lokasi</span>
+                </label>
+              </div>
+
+              <button id="btn-reanalyze" class="btn-primary-sm">
+                Analisis
+              </button>
+
+            </div>
+
+          </div>
+
+          <div id="map" class="map-view-container"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="spinner-container">
+      <div class="spinner"></div>
+      <p id="loading-text">Menghubungkan ke server satelit presipitasi global & elevasi...</p>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
